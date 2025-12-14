@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Lightbulb, ArrowRight, Loader2, Image } from 'lucide-react';
+import { Sparkles, Lightbulb, ArrowRight, Loader2, Image, Brain, Wand2 } from 'lucide-react';
 
 const SuggestionsPanel = ({
     suggestions,
@@ -12,6 +12,15 @@ const SuggestionsPanel = ({
     generateCount,
     isCurrentRound
 }) => {
+    // Handle both old format (string) and new format (object with thinking/prompt)
+    const hasSuggestions = suggestions && (
+        (typeof suggestions === 'string' && suggestions.length > 0) ||
+        (typeof suggestions === 'object' && (suggestions.thinking || suggestions.prompt))
+    );
+
+    const thinkingText = typeof suggestions === 'object' ? suggestions.thinking : '';
+    const promptText = typeof suggestions === 'object' ? suggestions.prompt : suggestions;
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -43,24 +52,50 @@ const SuggestionsPanel = ({
                         <p className="text-sm text-gray-500 font-medium">Combining feedback...</p>
                     </div>
                 </div>
-            ) : suggestions ? (
+            ) : hasSuggestions ? (
                 <div className="space-y-4">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-5 border-2 border-purple-100"
-                    >
-                        <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <Lightbulb className="w-4 h-4 text-white" />
+                    {/* Thinking Section */}
+                    {thinkingText && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-5 border-2 border-blue-100"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <Brain className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-semibold text-blue-700 mb-2">Analysis</h3>
+                                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm">
+                                        {thinkingText}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                    {suggestions}
-                                </p>
+                        </motion.div>
+                    )}
+
+                    {/* Prompt Section */}
+                    {promptText && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: thinkingText ? 0.1 : 0 }}
+                            className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-5 border-2 border-purple-100"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <Wand2 className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-semibold text-purple-700 mb-2">Image Generation Prompt</h3>
+                                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm">
+                                        {promptText}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    </motion.div>
+                        </motion.div>
+                    )}
 
                     {/* Generate Photos Button - only for current round */}
                     {isCurrentRound && (

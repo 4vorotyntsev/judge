@@ -89,7 +89,7 @@ const RoundCard = ({
                 )}
 
                 {/* Suggestions Panel */}
-                {(isCurrentRound || suggestions) && (
+                {(isCurrentRound || (suggestions && (suggestions.thinking || suggestions.prompt))) && (
                     <SuggestionsPanel
                         suggestions={suggestions}
                         combineLoading={isCurrentRound ? combineLoading : false}

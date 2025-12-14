@@ -20,7 +20,7 @@ function App() {
     imageFile: null,
     feedbacks: [],
     swipeStats: { yes: 0, total: 0 },
-    suggestions: '',
+    suggestions: { thinking: '', prompt: '' },
     newImages: []
   });
 
@@ -57,7 +57,7 @@ function App() {
       imageFile: file,
       feedbacks: [],
       swipeStats: { yes: 0, total: 0 },
-      suggestions: '',
+      suggestions: { thinking: '', prompt: '' },
       newImages: []
     }));
   };
@@ -154,7 +154,7 @@ function App() {
       const data = await res.json();
       setCurrentRound(prev => ({
         ...prev,
-        suggestions: data.summary
+        suggestions: { thinking: data.thinking || '', prompt: data.prompt || '' }
       }));
     } catch (err) {
       console.error(err);
@@ -165,8 +165,8 @@ function App() {
 
   // Handler for generate button click
   const handleGenerateClick = () => {
-    if (currentRound.suggestions) {
-      handleGenerate(currentRound.suggestions);
+    if (currentRound.suggestions?.prompt) {
+      handleGenerate(currentRound.suggestions.prompt);
     }
   };
 
@@ -222,7 +222,7 @@ function App() {
       imageFile: newImageFile,
       feedbacks: [],
       swipeStats: { yes: 0, total: 0 },
-      suggestions: '',
+      suggestions: { thinking: '', prompt: '' },
       newImages: []
     });
   };

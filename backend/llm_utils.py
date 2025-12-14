@@ -151,9 +151,19 @@ async def combine_feedback(feedbacks, api_key, goal):
 
     
     system_prompt = f"""
-    You act as an image generation expert. 
-    Based on the feedback about the photo, provide ONLY a specific image generation prompt that would enhance the photo.
-    Note: all feedbacks are provided by Tinder users, they answered questions about photo to increase the change or RIGHT SWIPES.
+    You act as an image generation expert and dating coach. 
+    Based on the feedback about the photo, you need to provide TWO things:
+
+    1. THINKING: Analyze the feedback and think about:
+       - What elements should definitely be KEPT because they're working well
+       - What elements need to be CHANGED or improved
+       - What to DOUBLE DOWN on (strengths to emphasize more)
+       - What to AVOID or remove entirely
+       - Overall strategy for improvement
+
+    2. PROMPT: A specific image generation prompt that would enhance the photo based on your analysis.
+
+    Note: all feedbacks are provided by Tinder users, they answered questions about photo to increase the change of RIGHT SWIPES.
 
     The goal of the owner of the photo to get more {goal} SWIPES. {'Apply suggestions to get more RIGHT SWIPES' if goal == 'right' else 'Do the opposite of suggestions to get more LEFT SWIPES'}.
     
@@ -162,7 +172,11 @@ async def combine_feedback(feedbacks, api_key, goal):
     - Actionable for an AI image generator
     - Focus on the most impactful improvements mentioned in the feedback
     
-    Respond with ONLY the image generation prompt, nothing else. No explanations, no summaries, just the prompt.
+    Respond with ONLY a JSON object in this exact format:
+    {{
+        "thinking": "Your detailed analysis of what to keep, change, double down on, avoid, and the overall strategy",
+        "prompt": "The specific image generation prompt"
+    }}
     """
     logger.info(f"[COMBINE] System Prompt:\n{system_prompt}")
     
@@ -186,7 +200,8 @@ async def combine_feedback(feedbacks, api_key, goal):
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
-        ]
+        ],
+        "response_format": {"type": "json_object"}
     }
     
     logger.info(f"[COMBINE] Model: {data['model']}")
@@ -197,11 +212,25 @@ async def combine_feedback(feedbacks, api_key, goal):
         response = await client.post(url, headers=headers, json=data, timeout=30.0)
         result = response.json()
     
-    summary = result['choices'][0]['message']['content']
+    content = result['choices'][0]['message']['content']
     logger.info(f"[COMBINE] Response Status: {response.status_code}")
-    logger.info(f"[COMBINE] Generated Summary:\n{summary}")
+    logger.info(f"[COMBINE] Raw Response:\n{content}")
     
-    return {"summary": summary}
+    # Parse the JSON response
+    try:
+        parsed = json.loads(content)
+        thinking = parsed.get("thinking", "")
+        prompt_text = parsed.get("prompt", "")
+        logger.info(f"[COMBINE] Parsed Thinking:\n{thinking}")
+        logger.info(f"[COMBINE] Parsed Prompt:\n{prompt_text}")
+    except json.JSONDecodeError as e:
+        logger.error(f"[COMBINE] JSONDecodeError: {e}")
+        logger.error(f"[COMBINE] Failed to parse content: {content}")
+        # Fallback: use entire content as prompt
+        thinking = ""
+        prompt_text = content
+    
+    return {"thinking": thinking, "prompt": prompt_text}
 
 async def generate_new_images(suggestions, api_key, count=4, original_image=None):
     # Nana Banana Implementation
