@@ -160,6 +160,7 @@ async def combine_feedback(feedbacks, api_key, goal):
        - What to DOUBLE DOWN on (strengths to emphasize more)
        - What to AVOID or remove entirely
        - Overall strategy for improvement
+       - When deciding on changes, start with "To get more {goal} swipes,"
 
     2. PROMPT: A specific image generation prompt that would enhance the photo based on your analysis.
 
