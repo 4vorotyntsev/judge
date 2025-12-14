@@ -16,16 +16,18 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key):
 
     Your task is to 
     - Look at this person's Tinder profile picture and decide if you would swipe right (like).
-    - Provide a brief explanation staying in character on why you would swipe right or not.
-    - Provide a brief explanation staying in character on what concrete things you would change to make THIS photo better. You must not ask for another photo, different person, etc.
+    - Provide detailed feedback staying in character about what you think of this photo.
     
-    You should act an answer as real human with specified personality.
+    You should act and answer as a real human with the specified personality.
 
     You MUST respond with valid JSON in this exact format:
     {{
         "swipe_right": true or false,
-        "reason": "",
-        "change": "
+        "reason": "Brief explanation of why you would or wouldn't swipe right",
+        "likes": "What you like about this photo (be specific)",
+        "dislikes": "What you don't like about this photo (be specific)",
+        "keep": "What aspects of the photo should definitely stay the same",
+        "change": "What concrete things you would change to make THIS photo better (don't ask for a different photo or person)"
     }}
 
     Be honest and stay in character when providing your response. Only respond with the JSON object, nothing else.
@@ -74,24 +76,60 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key):
         parsed = json.loads(content)
         swipe_right = parsed.get("swipe_right", None)
         reason = parsed.get("reason", "No reason provided")
-        change = parsed.get("change", "No change provided")
+        likes = parsed.get("likes", "")
+        dislikes = parsed.get("dislikes", "")
+        keep = parsed.get("keep", "")
+        change = parsed.get("change", "")
     except json.JSONDecodeError as e:
         logger.error(f"[EVALUATE] JSONDecodeError: {e}")
         swipe_right = False
         reason = ""
+        likes = ""
+        dislikes = ""
+        keep = ""
         change = ""
+    
+    # Build content summary
+    content_parts = []
+    if reason:
+        content_parts.append(f"Reason: {reason}")
+    if likes:
+        content_parts.append(f"Likes: {likes}")
+    if dislikes:
+        content_parts.append(f"Dislikes: {dislikes}")
+    if keep:
+        content_parts.append(f"Keep: {keep}")
+    if change:
+        content_parts.append(f"Change: {change}")
+    
+    full_content = '\n'.join(content_parts)
     
     return {
         "personaId": persona['id'], 
+        'name': persona['name'],
         "swipe_right": swipe_right,
-        "reason": reason + '\n' + change,
-        "content": reason + '\n' + change,
+        "reason": reason,
+        "likes": likes,
+        "dislikes": dislikes,
+        "keep": keep,
+        "change": change,
+        "content": full_content,
     }
 
 async def combine_feedback(feedbacks, api_key):
     # Aggregator
-    feedback_text = "\n".join([f"- {f['personaName']}: {f['content']}" for f in feedbacks])
-    
+    feedback_text = ''
+    for persona in feedbacks:
+        feedback_text += f"""
+        Character: {persona['name']}
+        Feedback: {persona['content']}
+        Like: {persona['likes']}
+        Dislike: {persona['dislikes']}
+        Keep: {persona['keep']}
+        Change: {persona['change']}
+        ---
+    """
+
     system_prompt = """
     You act as an image generation expert. 
     Based on the feedback about the photo, provide ONLY a specific image generation prompt that would enhance the photo.

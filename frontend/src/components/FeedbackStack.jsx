@@ -69,11 +69,46 @@ const FeedbackStack = ({ feedbacks, personas }) => {
                                 </div>
                             </div>
 
-                            {/* Feedback content */}
-                            <div>
-                                <p className="text-sm text-gray-600 leading-relaxed italic">
-                                    "{fb.content}"
-                                </p>
+                            {/* Feedback content - structured sections */}
+                            <div className="space-y-2 text-sm">
+                                {/* Reason */}
+                                {fb.reason && (
+                                    <p className="text-gray-600 leading-relaxed italic">
+                                        "{fb.reason}"
+                                    </p>
+                                )}
+
+                                {/* Likes */}
+                                {fb.likes && (
+                                    <div className="flex items-start gap-2 bg-green-50 p-2 rounded-lg border border-green-100">
+                                        <span className="text-green-600 font-medium text-xs min-w-[60px]">❤️ Likes:</span>
+                                        <p className="text-gray-700 text-xs">{fb.likes}</p>
+                                    </div>
+                                )}
+
+                                {/* Dislikes */}
+                                {fb.dislikes && (
+                                    <div className="flex items-start gap-2 bg-red-50 p-2 rounded-lg border border-red-100">
+                                        <span className="text-red-600 font-medium text-xs min-w-[60px]">👎 Dislikes:</span>
+                                        <p className="text-gray-700 text-xs">{fb.dislikes}</p>
+                                    </div>
+                                )}
+
+                                {/* Keep */}
+                                {fb.keep && (
+                                    <div className="flex items-start gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                                        <span className="text-blue-600 font-medium text-xs min-w-[60px]">✨ Keep:</span>
+                                        <p className="text-gray-700 text-xs">{fb.keep}</p>
+                                    </div>
+                                )}
+
+                                {/* Change */}
+                                {fb.change && (
+                                    <div className="flex items-start gap-2 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                                        <span className="text-amber-600 font-medium text-xs min-w-[60px]">🔧 Change:</span>
+                                        <p className="text-gray-700 text-xs">{fb.change}</p>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     );

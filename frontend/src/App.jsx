@@ -99,7 +99,12 @@ function App() {
         const data = await res.json();
         return {
           personaId: persona.id,
-          content: data.reason || data.content,
+          content: data.content || data.reason,
+          reason: data.reason,
+          likes: data.likes || '',
+          dislikes: data.dislikes || '',
+          keep: data.keep || '',
+          change: data.change || '',
           isSwipeRight: data.swipe_right === true
         };
       } catch (err) {
