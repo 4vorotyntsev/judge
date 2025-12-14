@@ -22,6 +22,7 @@ class EvaluationRequest(BaseModel):
 
 class CombineRequest(BaseModel):
     openRouterKey: str
+    goal: str = "right"  # "right" = want to be liked, "left" = want to be disliked
     feedbacks: List[dict]
 
 class GenerateRequest(BaseModel):
@@ -51,7 +52,7 @@ async def evaluate_endpoint(
 @app.post("/api/combine")
 async def combine_endpoint(request: CombineRequest):
     try:
-        result = await combine_feedback(request.feedbacks, request.openRouterKey)
+        result = await combine_feedback(request.feedbacks, request.openRouterKey, request.goal)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

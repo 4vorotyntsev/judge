@@ -23,6 +23,16 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key):
     - Suggest what to CHANGE to increase the likliness of the photo and get more right swipes.
 
     Be honest and stay in character when providing your response. Only respond with the JSON object, nothing else.
+
+    Output format:
+    {
+        "swipe": "left" or "right",
+        "reason": "Reason for the swipe",
+        "likes": "What you like about the photo",
+        "dislikes": "What you dislike about the photo",
+        "keep": "What to keep to make picture more right swipeable",
+        "change": "What to change to make picture more right swipeable"
+    }
     """
     logger.info(f"[EVALUATE] System Prompt:\n{system_prompt}")
     

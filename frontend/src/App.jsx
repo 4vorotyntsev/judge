@@ -93,7 +93,6 @@ function App() {
       formData.append('openRouterKey', openRouterKey);
       formData.append('persona', JSON.stringify(persona));
       formData.append('image', currentRound.imageFile);
-      formData.append('swipeGoal', swipeGoal);
 
       try {
         const res = await fetch(`${API_URL}/evaluate`, {
@@ -141,6 +140,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           openRouterKey,
+          goal: swipeGoal,
           feedbacks: currentRound.feedbacks.map(f => ({
             name: personas.find(p => p.id === f.personaId)?.name || 'Unknown',
             content: f.content,
