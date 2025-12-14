@@ -17,10 +17,11 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
     They want to make their profile {"LESS attractive" if swipe_goal == "left" else "MORE attractive"} to most people.
     
     Your task is to:
-    - Look at this person's Tinder profile picture and decide if YOUR CHARACTER would swipe {swipe_goal.upper()}.
-    - Provide detailed feedback on your desigion.
-    - Suggest what to KEEP to make this photo less/more attractive.
-    - Suggest what to CHANGE to make this photo less/more attractive.
+    - Look at this person's Tinder profile picture and HONESTLY decide if YOUR CHARACTER would swipe RIGHT or LEFT.
+    - Provide detailed feedback on your decision.
+    - Since the photo owner's goal is to get {swipe_goal.upper()} swipes, tailor your suggestions accordingly.
+    - Suggest what to KEEP to help achieve {"fewer right swipes (less attractive)" if swipe_goal == "left" else "more right swipes (more attractive)"}.
+    - Suggest what to CHANGE to help achieve {"more left swipes" if swipe_goal == "left" else "more right swipes"}.
     """
 
     if swipe_goal == "right":
