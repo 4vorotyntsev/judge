@@ -1,5 +1,5 @@
 import React from 'react';
-import { Key, Heart, MessageCircle, Image, BarChart3, Sparkles, Loader2 } from 'lucide-react';
+import { Key, Heart, MessageCircle, Image, Sparkles, Loader2 } from 'lucide-react';
 
 const Sidebar = ({
     openRouterKey,
@@ -14,9 +14,7 @@ const Sidebar = ({
     hasSuggestions,
     selectedJudgeCount,
     generateCount,
-    setGenerateCount,
-    swipeStats,
-    round
+    setGenerateCount
 }) => {
     return (
         <div className="w-72 bg-white p-6 border-r border-gray-200 flex flex-col gap-5 shadow-sm">
@@ -91,8 +89,8 @@ const Sidebar = ({
                 onClick={onGenerate}
                 disabled={generating || !hasSuggestions}
                 className={`flex items-center justify-center gap-2 w-full p-3 rounded-xl font-bold transition-all duration-300 ${hasSuggestions
-                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-200 hover:shadow-xl hover:scale-[1.02]'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-200 hover:shadow-xl hover:scale-[1.02]'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
             >
                 {generating ? (
@@ -105,32 +103,6 @@ const Sidebar = ({
 
             {/* Spacer */}
             <div className="flex-1" />
-
-            {/* Score Board - moved here */}
-            <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-200">
-                <div className="flex items-center gap-2 mb-3">
-                    <BarChart3 className="h-5 w-5 text-purple-500" />
-                    <h3 className="font-bold text-gray-800">Score Board</h3>
-                </div>
-                <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Round</span>
-                        <span className="font-bold text-purple-600">{round}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Swipe Right</span>
-                        <span className="font-bold text-green-600">{swipeStats.yes} / {swipeStats.total}</span>
-                    </div>
-                    {swipeStats.total > 0 && (
-                        <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500"
-                                style={{ width: `${(swipeStats.yes / swipeStats.total) * 100}%` }}
-                            />
-                        </div>
-                    )}
-                </div>
-            </div>
         </div>
     );
 };

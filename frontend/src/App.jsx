@@ -1,11 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import MainStage from './components/MainStage';
 import JudgeSelection from './components/JudgeSelection';
-import FeedbackStack from './components/FeedbackStack';
-import JudgesSummary from './components/JudgesSummary';
-import SuggestionsPanel from './components/SuggestionsPanel';
-import NewPicsSelection from './components/NewPicsSelection';
+import RoundCard from './components/RoundCard';
 import personasData from './data/personas.json';
 
 // API BASE URL
@@ -13,14 +9,20 @@ const API_URL = 'http://localhost:8000/api';
 
 function App() {
   const [openRouterKey, setOpenRouterKey] = useState('');
-  const [image, setImage] = useState(null); // Preview URL
-  const [imageFile, setImageFile] = useState(null); // Actual file for upload
 
-  const [round, setRound] = useState(1);
-  const [feedbacks, setFeedbacks] = useState([]);
-  const [swipeStats, setSwipeStats] = useState({ yes: 0, total: 0 });
-  const [suggestions, setSuggestions] = useState('');
-  const [newImages, setNewImages] = useState([]);
+  // History of all rounds
+  const [roundsHistory, setRoundsHistory] = useState([]);
+
+  // Current round state
+  const [currentRound, setCurrentRound] = useState({
+    roundNumber: 1,
+    image: null,
+    imageFile: null,
+    feedbacks: [],
+    swipeStats: { yes: 0, total: 0 },
+    suggestions: '',
+    newImages: []
+  });
 
   // Custom personas list (starts with default + custom ones)
   const [personas, setPersonas] = useState(personasData);
@@ -35,14 +37,26 @@ function App() {
   const [combineLoading, setCombineLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  // Ref for scrolling to new rounds
+  const bottomRef = useRef(null);
+
+  // Auto-scroll when new round is added
+  useEffect(() => {
+    if (roundsHistory.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [roundsHistory.length]);
+
   const handleImageUpload = (file) => {
-    setImageFile(file);
-    setImage(URL.createObjectURL(file));
-    // Reset state for new round
-    setFeedbacks([]);
-    setSwipeStats({ yes: 0, total: 0 });
-    setSuggestions('');
-    setNewImages([]);
+    setCurrentRound(prev => ({
+      ...prev,
+      image: URL.createObjectURL(file),
+      imageFile: file,
+      feedbacks: [],
+      swipeStats: { yes: 0, total: 0 },
+      suggestions: '',
+      newImages: []
+    }));
   };
 
   const handleAddCustomJudge = (customJudge) => {
@@ -59,11 +73,14 @@ function App() {
   };
 
   const handleAskGirls = async () => {
-    if (!imageFile || !openRouterKey || selectedJudges.length === 0) return;
+    if (!currentRound.imageFile || !openRouterKey || selectedJudges.length === 0) return;
 
     setLoading(true);
-    setFeedbacks([]);
-    setSwipeStats({ yes: 0, total: 0 });
+    setCurrentRound(prev => ({
+      ...prev,
+      feedbacks: [],
+      swipeStats: { yes: 0, total: 0 }
+    }));
 
     // Get selected personas by their IDs
     const selectedPersonas = personas.filter(p => selectedJudges.includes(p.id));
@@ -72,7 +89,7 @@ function App() {
       const formData = new FormData();
       formData.append('openRouterKey', openRouterKey);
       formData.append('persona', JSON.stringify(persona));
-      formData.append('image', imageFile);
+      formData.append('image', currentRound.imageFile);
 
       try {
         const res = await fetch(`${API_URL}/evaluate`, {
@@ -94,16 +111,19 @@ function App() {
     const results = await Promise.all(promises);
     const validResults = results.filter(r => r !== null);
 
-    setFeedbacks(validResults);
-
     const yesCount = validResults.filter(r => r.isSwipeRight).length;
-    setSwipeStats({ yes: yesCount, total: validResults.length });
+
+    setCurrentRound(prev => ({
+      ...prev,
+      feedbacks: validResults,
+      swipeStats: { yes: yesCount, total: validResults.length }
+    }));
 
     setLoading(false);
   };
 
   const handleCombine = async () => {
-    if (feedbacks.length === 0) return;
+    if (currentRound.feedbacks.length === 0) return;
     setCombineLoading(true);
 
     try {
@@ -112,14 +132,17 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           openRouterKey,
-          feedbacks: feedbacks.map(f => ({
+          feedbacks: currentRound.feedbacks.map(f => ({
             personaName: personas.find(p => p.id === f.personaId)?.name || 'Unknown',
             content: f.content
           }))
         })
       });
       const data = await res.json();
-      setSuggestions(data.summary);
+      setCurrentRound(prev => ({
+        ...prev,
+        suggestions: data.summary
+      }));
     } catch (err) {
       console.error(err);
     } finally {
@@ -129,8 +152,8 @@ function App() {
 
   // Handler for generate button click
   const handleGenerateClick = () => {
-    if (suggestions) {
-      handleGenerate(suggestions);
+    if (currentRound.suggestions) {
+      handleGenerate(currentRound.suggestions);
     }
   };
 
@@ -145,8 +168,8 @@ function App() {
       formData.append('count', generateCount.toString());
 
       // Include original image for reference
-      if (imageFile) {
-        formData.append('originalImage', imageFile);
+      if (currentRound.imageFile) {
+        formData.append('originalImage', currentRound.imageFile);
       }
 
       const res = await fetch(`${API_URL}/generate`, {
@@ -154,7 +177,10 @@ function App() {
         body: formData
       });
       const data = await res.json();
-      setNewImages(data.images || []);
+      setCurrentRound(prev => ({
+        ...prev,
+        newImages: data.images || []
+      }));
     } catch (err) {
       console.error(err);
     } finally {
@@ -163,25 +189,29 @@ function App() {
   };
 
   const handleSelectNewImage = async (imgUrl) => {
-    // Round continues
-    setRound(r => r + 1);
-    setImage(imgUrl);
+    // Save current round to history
+    setRoundsHistory(prev => [...prev, { ...currentRound }]);
 
     // Convert image URL to File object for the next round
+    let newImageFile = null;
     try {
       const res = await fetch(imgUrl);
       const blob = await res.blob();
-      const file = new File([blob], `round_${round + 1}.jpg`, { type: "image/jpeg" });
-      setImageFile(file);
+      newImageFile = new File([blob], `round_${currentRound.roundNumber + 1}.jpg`, { type: "image/jpeg" });
     } catch (err) {
       console.error("Error converting selected image to file", err);
     }
 
-    // Reset for new round
-    setFeedbacks([]);
-    setSwipeStats({ yes: 0, total: 0 });
-    setSuggestions('');
-    setNewImages([]);
+    // Start new round with the selected image
+    setCurrentRound({
+      roundNumber: currentRound.roundNumber + 1,
+      image: imgUrl,
+      imageFile: newImageFile,
+      feedbacks: [],
+      swipeStats: { yes: 0, total: 0 },
+      suggestions: '',
+      newImages: []
+    });
   };
 
   return (
@@ -195,17 +225,15 @@ function App() {
         loading={loading}
         combineLoading={combineLoading}
         generating={generating}
-        hasFeedbacks={feedbacks.length > 0}
-        hasSuggestions={!!suggestions}
+        hasFeedbacks={currentRound.feedbacks.length > 0}
+        hasSuggestions={!!currentRound.suggestions}
         selectedJudgeCount={selectedJudges.length}
         generateCount={generateCount}
         setGenerateCount={setGenerateCount}
-        swipeStats={swipeStats}
-        round={round}
       />
 
-      <main className="flex-1 p-8 overflow-y-auto flex flex-col gap-6">
-        {/* Judge Selection */}
+      <main className="flex-1 p-8 overflow-y-auto flex flex-col gap-8">
+        {/* Judge Selection - sticky at top */}
         <JudgeSelection
           personas={personas}
           selectedJudges={selectedJudges}
@@ -213,43 +241,49 @@ function App() {
           onAddCustomJudge={handleAddCustomJudge}
         />
 
-        {/* Main content area: Photo + Judges Summary side by side */}
-        <div className="flex gap-6 min-h-[350px]">
-          {/* Main Stage - Photo upload */}
-          <div className="w-1/2">
-            <MainStage image={image} onImageUpload={handleImageUpload} />
-          </div>
+        {/* Historical Rounds Feed */}
+        {roundsHistory.map((round, index) => (
+          <RoundCard
+            key={`round-${round.roundNumber}`}
+            roundNumber={round.roundNumber}
+            image={round.image}
+            feedbacks={round.feedbacks}
+            suggestions={round.suggestions}
+            swipeStats={round.swipeStats}
+            newImages={[]}
+            personas={personas}
+            isCurrentRound={false}
+            loading={false}
+            combineLoading={false}
+            generating={false}
+            generateCount={generateCount}
+            onImageUpload={() => { }}
+            onCombine={() => { }}
+            onSelectNewImage={() => { }}
+          />
+        ))}
 
-          {/* Judges Summary - visual overview of votes */}
-          <div className="w-1/2">
-            <JudgesSummary
-              feedbacks={feedbacks}
-              personas={personas}
-              swipeStats={swipeStats}
-            />
-          </div>
-        </div>
-
-        {/* Suggestions Panel - stacked below */}
-        <SuggestionsPanel
-          suggestions={suggestions}
+        {/* Current Round */}
+        <RoundCard
+          roundNumber={currentRound.roundNumber}
+          image={currentRound.image}
+          feedbacks={currentRound.feedbacks}
+          suggestions={currentRound.suggestions}
+          swipeStats={currentRound.swipeStats}
+          newImages={currentRound.newImages}
+          personas={personas}
+          isCurrentRound={true}
+          loading={loading}
           combineLoading={combineLoading}
-          onCombine={handleCombine}
-          hasFeedbacks={feedbacks.length > 0}
-        />
-
-        {/* Detailed Feedback from each judge */}
-        <FeedbackStack feedbacks={feedbacks} personas={personas} />
-
-        <NewPicsSelection
-          newImages={newImages}
-          onSelect={handleSelectNewImage}
           generating={generating}
           generateCount={generateCount}
+          onImageUpload={handleImageUpload}
+          onCombine={handleCombine}
+          onSelectNewImage={handleSelectNewImage}
         />
 
-        {/* Spacer for bottom scroll */}
-        <div className="h-10" />
+        {/* Scroll anchor */}
+        <div ref={bottomRef} className="h-10" />
       </main>
     </div>
   );

@@ -70,7 +70,7 @@ const FeedbackStack = ({ feedbacks, personas }) => {
                             </div>
 
                             {/* Feedback content */}
-                            <div className="overflow-y-auto max-h-[100px] scrollbar-thin">
+                            <div>
                                 <p className="text-sm text-gray-600 leading-relaxed italic">
                                     "{fb.content}"
                                 </p>

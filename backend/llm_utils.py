@@ -11,19 +11,25 @@ logger = logging.getLogger(__name__)
 async def evaluate_image_with_persona(image_bytes, persona, api_key):
     # Encode image
     base64_image = base64.b64encode(image_bytes).decode('utf-8')
+    system_prompt = f"""
+    You act as `{persona['name']}` with `{persona['bio']}` personality.
+
+    Your task is to 
+    - Look at this person's Tinder profile picture and decide if you would swipe right (like).
+    - Provide a brief explanation staying in character on why you would swipe right or not.
+    - Provide a brief explanation staying in character on what concrete things you would change to make THIS photo better. You must not ask for another photo, different person, etc.
     
-    prompt = f"""You are {persona['name']}. 
-Your personality: {persona['bio']}. 
-Your task: Look at this person's Tinder profile picture and decide if you would swipe right (like).
+    You should act an answer as real human with specified personality.
 
-You MUST respond with valid JSON in this exact format:
-{{
-    "swipe_right": true or false,
-    "reason": "Your brief explanation staying in character on why you would swipe right or not",
-    "change": "Your brief explanation staying in character on what concrete things you would change to make the photo better",
-}}
+    You MUST respond with valid JSON in this exact format:
+    {{
+        "swipe_right": true or false,
+        "reason": "",
+        "change": "
+    }}
 
-Be honest and stay in character. Only respond with the JSON object, nothing else."""
+    Be honest and stay in character when providing your response. Only respond with the JSON object, nothing else.
+    """
     
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -36,9 +42,12 @@ Be honest and stay in character. Only respond with the JSON object, nothing else
         "model": "openai/gpt-4o-mini",
         "messages": [
             {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": prompt},
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                 ]
             }
@@ -48,7 +57,7 @@ Be honest and stay in character. Only respond with the JSON object, nothing else
     
     # Log request (without full base64 image for readability)
     logger.info(f"[EVALUATE] Persona: {persona['name']}")
-    logger.info(f"[EVALUATE] Prompt: {prompt}")
+    logger.info(f"[EVALUATE] System prompt length: {len(system_prompt)} chars")
     logger.info(f"[EVALUATE] Model: {data['model']}")
     
     async with httpx.AsyncClient() as client:
@@ -66,7 +75,8 @@ Be honest and stay in character. Only respond with the JSON object, nothing else
         swipe_right = parsed.get("swipe_right", None)
         reason = parsed.get("reason", "No reason provided")
         change = parsed.get("change", "No change provided")
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logger.error(f"[EVALUATE] JSONDecodeError: {e}")
         swipe_right = False
         reason = ""
         change = ""
@@ -74,21 +84,17 @@ Be honest and stay in character. Only respond with the JSON object, nothing else
     return {
         "personaId": persona['id'], 
         "swipe_right": swipe_right,
-        "reason": reason + ' ' + change,
-        "content": reason + ' ' + change,
+        "reason": reason + '\n' + change,
+        "content": reason + '\n' + change,
     }
 
 async def combine_feedback(feedbacks, api_key):
     # Aggregator
     feedback_text = "\n".join([f"- {f['personaName']}: {f['content']}" for f in feedbacks])
     
-    prompt = f"""
-    Here is feedback from different people about a Tinder profile picture:
-    ```
-    {feedback_text}
-    ```
-    
-    Based on this feedback, provide ONLY a specific image generation prompt that would create an improved version of the photo.
+    system_prompt = """
+    You act as an image generation expert. 
+    Based on the feedback about the photo, provide ONLY a specific image generation prompt that would enhance the photo.
     
     The prompt should be:
     - Detailed and specific about pose, lighting, background, expression, and styling
@@ -96,6 +102,13 @@ async def combine_feedback(feedbacks, api_key):
     - Focus on the most impactful improvements mentioned in the feedback
     
     Respond with ONLY the image generation prompt, nothing else. No explanations, no summaries, just the prompt.
+    """
+    
+    prompt = f"""
+    Here is feedback from different people about a Tinder profile picture:
+    ```
+    {feedback_text}
+    ```
     """
      
     url = "https://openrouter.ai/api/v1/chat/completions"
@@ -107,7 +120,10 @@ async def combine_feedback(feedbacks, api_key):
     
     data = {
         "model": "openai/gpt-4o-mini",
-        "messages": [{"role": "user", "content": prompt}]
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ]
     }
     
     async with httpx.AsyncClient() as client:
@@ -134,24 +150,28 @@ async def generate_new_images(suggestions, api_key, count=4, original_image=None
     images = []
     
     # Build message content
-    prompt_text = f"Generate a photorealistic tinder profile picture based on this advice: {suggestions}"
+    system_prompt = f"""
+    Generate an enhanced version of a Tinder profile picture based on this advice
+    ```
+    {suggestions}
+    ```
+    """
     
-    if original_image:
-        # Include original image for reference
-        base64_image = base64.b64encode(original_image).decode('utf-8')
-        message_content = [
-            {"type": "text", "text": f"Here is the original photo. Please generate an improved version based on this advice: {suggestions}"},
-            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-        ]
-    else:
-        message_content = prompt_text
-    
+    # Include original image for reference
+    base64_image = base64.b64encode(original_image).decode('utf-8')
+
     data = {
         "model": "google/gemini-3-pro-image-preview",
         "messages": [
             {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
                 "role": "user",
-                "content": message_content
+                "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                ]
             }
         ],
         "modalities": ["image", "text"]
