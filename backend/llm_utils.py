@@ -67,16 +67,15 @@ Be honest and stay in character. Only respond with the JSON object, nothing else
         reason = parsed.get("reason", "No reason provided")
         change = parsed.get("change", "No change provided")
     except json.JSONDecodeError:
-        # Fallback if JSON parsing fails
         swipe_right = False
         reason = ""
-        change = "No change provided"
+        change = ""
     
     return {
         "personaId": persona['id'], 
         "swipe_right": swipe_right,
-        "reason": reason,
-        "content": reason  # Keep for backward compatibility
+        "reason": reason + ' ' + change,
+        "content": reason + ' ' + change,
     }
 
 async def combine_feedback(feedbacks, api_key):
