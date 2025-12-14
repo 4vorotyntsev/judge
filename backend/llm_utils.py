@@ -8,58 +8,23 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal="right"):
+async def evaluate_image_with_persona(image_bytes, persona, api_key):
     # Encode image
     base64_image = base64.b64encode(image_bytes).decode('utf-8')
-    
-    goal_description = f"""
-    IMPORTANT CONTEXT: The owner of this photo WANTS to get swiped {swipe_goal.upper()} on Tinder.
-    They want to make their profile {"LESS attractive" if swipe_goal == "left" else "MORE attractive"} to most people.
-    
-    Your task is to:
-    - Look at this person's Tinder profile picture and HONESTLY decide if YOUR CHARACTER would swipe RIGHT or LEFT.
-    - Provide detailed feedback on your decision.
-    - Since the photo owner's goal is to get {swipe_goal.upper()} swipes, tailor your suggestions accordingly.
-    - Suggest what to KEEP to help achieve {"fewer right swipes (less attractive)" if swipe_goal == "left" else "more right swipes (more attractive)"}.
-    - Suggest what to CHANGE to help achieve {"more left swipes" if swipe_goal == "left" else "more right swipes"}.
-    """
-
-    if swipe_goal == "right":
-        json_instructions = """
-        You MUST respond with valid JSON in this exact format:
-        {{
-            "swipe": "right" or "left",
-            "reason": "Brief explanation of why you would or wouldn't swipe right",
-            "likes": "What you like about this photo that makes it attractive (things to keep)",
-            "dislikes": "What you dislike about this photo (things to improve)",
-            "keep": "What aspects make this photo appealing and should stay the same",
-            "change": "What concrete things to change to make this photo MORE likely to get right swipes"
-        }}
-        """
-    else:  # swipe_goal == "left"
-        json_instructions = """
-        You MUST respond with valid JSON in this exact format:
-        {{
-            "swipe": "right" or "left",
-            "reason": "Brief explanation of why you would or wouldn't swipe",
-            "likes": "What you like about this photo that might make someone swipe (things to potentially remove)",
-            "dislikes": "What you dislike about this photo that helps achieve left swipes (things to keep or enhance)",
-            "keep": "What aspects make this photo unappealing and should stay the same",
-            "change": "What concrete things to change to make this photo even MORE likely to get left swipes"
-        }}
-        """
 
     system_prompt = f"""
     You act as `{persona['name']}` with `{persona['bio']}` personality.
-
-    {goal_description}
-
     You should act and answer as a real human with the specified personality.
 
-    {json_instructions}
+    Your task is to:
+    - Look at this person's Tinder profile picture and HONESTLY decide if YOUR CHARACTER would swipe RIGHT or LEFT.
+    - Provide detailed feedback on your decision.
+    - Suggest what to KEEP to increase the likliness of the photo and get more right swipes.
+    - Suggest what to CHANGE to increase the likliness of the photo and get more right swipes.
 
     Be honest and stay in character when providing your response. Only respond with the JSON object, nothing else.
     """
+    logger.info(f"[EVALUATE] System Prompt:\n{system_prompt}")
     
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -89,7 +54,6 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
     logger.info(f"[EVALUATE] === Starting Evaluation ===")
     logger.info(f"[EVALUATE] Persona: {persona['name']} (ID: {persona['id']})")
     logger.info(f"[EVALUATE] Persona Bio: {persona['bio']}")
-    logger.info(f"[EVALUATE] Swipe Goal: {swipe_goal}")
     logger.info(f"[EVALUATE] Model: {data['model']}")
     logger.info(f"[EVALUATE] System Prompt:\n{system_prompt}")
     logger.info(f"[EVALUATE] User Message: [IMAGE - not logged]")
@@ -158,7 +122,7 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
         "content": full_content,
     }
 
-async def combine_feedback(feedbacks, api_key):
+async def combine_feedback(feedbacks, api_key, goal):
     logger.info(f"[COMBINE] === Starting Feedback Combination ===")
     logger.info(f"[COMBINE] Number of feedbacks: {len(feedbacks)}")
     
@@ -175,9 +139,13 @@ async def combine_feedback(feedbacks, api_key):
         ---
     """
 
-    system_prompt = """
+    
+    system_prompt = f"""
     You act as an image generation expert. 
     Based on the feedback about the photo, provide ONLY a specific image generation prompt that would enhance the photo.
+    Note: all feedbacks are provided by Tinder users, they answered questions about photo to increase the change or RIGHT SWIPES.
+
+    The goal of the owner of the photo to get more {goal} SWIPES. {'Apply suggestions to get more RIGHT SWIPES' if goal == 'right' else 'Do the opposite of suggestions to get more LEFT SWIPES'}.
     
     The prompt should be:
     - Detailed and specific about pose, lighting, background, expression, and styling
@@ -186,6 +154,7 @@ async def combine_feedback(feedbacks, api_key):
     
     Respond with ONLY the image generation prompt, nothing else. No explanations, no summaries, just the prompt.
     """
+    logger.info(f"[COMBINE] System Prompt:\n{system_prompt}")
     
     prompt = f"""
     Here is feedback from different people about a Tinder profile picture:
@@ -193,6 +162,7 @@ async def combine_feedback(feedbacks, api_key):
     {feedback_text}
     ```
     """
+    logger.info(f"[COMBINE] User Prompt:\n{prompt}")
      
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
