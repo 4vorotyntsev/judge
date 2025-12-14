@@ -1,12 +1,14 @@
 import React from 'react';
-import { Key, Image } from 'lucide-react';
+import { Key, Image, Heart, X, Target } from 'lucide-react';
 
 const Sidebar = ({
     openRouterKey,
     setOpenRouterKey,
     selectedJudgeCount,
     generateCount,
-    setGenerateCount
+    setGenerateCount,
+    swipeGoal,
+    setSwipeGoal
 }) => {
     return (
         <div className="w-72 bg-white p-6 border-r border-gray-200 flex flex-col gap-5 shadow-sm">
@@ -28,6 +30,36 @@ const Sidebar = ({
             {/* Settings Section */}
             <div className="flex flex-col gap-3">
                 <label className="text-sm font-medium text-gray-700">Settings</label>
+
+                {/* Swipe Goal Selector */}
+                <div className="p-3 bg-gradient-to-r from-green-50 to-red-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Target className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-700">Your Goal</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setSwipeGoal('right')}
+                            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${swipeGoal === 'right'
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md'
+                                : 'text-gray-600 hover:bg-green-100'
+                                }`}
+                        >
+                            <Heart className="h-4 w-4" />
+                            Be Liked
+                        </button>
+                        <button
+                            onClick={() => setSwipeGoal('left')}
+                            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${swipeGoal === 'left'
+                                ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md'
+                                : 'text-gray-600 hover:bg-red-100'
+                                }`}
+                        >
+                            <X className="h-4 w-4" />
+                            Be Disliked
+                        </button>
+                    </div>
+                </div>
 
                 {/* Selected Judges Display */}
                 <div className="p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border border-pink-200 text-sm font-medium text-gray-700">

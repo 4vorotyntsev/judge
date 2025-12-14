@@ -36,14 +36,15 @@ def read_root():
 async def evaluate_endpoint(
     openRouterKey: str = Form(...),
     persona: str = Form(...), # JSON string of persona
-    image: UploadFile = File(...)
+    image: UploadFile = File(...),
+    swipeGoal: str = Form("right")  # "right" = want to be liked, "left" = want to be disliked
 ):
     try:
         persona_dict = json.loads(persona)
         # Read image content to send to LLM (base64 encoding will affect this, handle in utils)
         image_bytes = await image.read()
         
-        result = await evaluate_image_with_persona(image_bytes, persona_dict, openRouterKey)
+        result = await evaluate_image_with_persona(image_bytes, persona_dict, openRouterKey, swipeGoal)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

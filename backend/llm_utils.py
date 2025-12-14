@@ -8,28 +8,38 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-async def evaluate_image_with_persona(image_bytes, persona, api_key):
+async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal="right"):
     # Encode image
     base64_image = base64.b64encode(image_bytes).decode('utf-8')
-    system_prompt = f"""
-    You act as `{persona['name']}` with `{persona['bio']}` personality.
-
-    Your task is to 
-    - Look at this person's Tinder profile picture and decide if you would swipe right (like).
-    - Provide detailed feedback staying in character about what you think of this photo.
     
-    You should act and answer as a real human with the specified personality.
+    goal_description = f"""
+    IMPORTANT CONTEXT: The owner of this photo WANTS to get swiped {swipe_goal.upper()} on Tinder.
+    They want to make their profile {"LESS attractive" if swipe_goal == "left" else "MORE attractive"} to most people.
+    
+    Your task is to:
+    - Look at this person's Tinder profile picture and decide if you would swipe {swipe_goal.upper()}.
+    - Provide detailed feedback on what makes this photo unappealing or off-putting.
+    - Suggest what to KEEP to maintain the "unattractive" vibe.
+    - Suggest what to CHANGE to make the photo even MORE likely to get left swipes.
+    """
 
+    json_instructions = """
     You MUST respond with valid JSON in this exact format:
     {{
         "swipe_right": true or false,
-        "reason": "Brief explanation of why you would or wouldn't swipe right",
-        "likes": "What you like about this photo (be specific)",
-        "dislikes": "What you don't like about this photo (be specific)",
-        "keep": "What aspects of the photo should definitely stay the same",
-        "change": "What concrete things you would change to make THIS photo better (don't ask for a different photo or person)"
+        "reason": "Brief explanation of why you would or wouldn't swipe",
+        "likes": "What you like about this photo that might make someone swipe (things to potentially remove)",
+        "dislikes": "What you dislike about this photo that helps achieve left swipes (things to keep or enhance)",
+        "keep": "What aspects make this photo unappealing and should stay the same",
+        "change": "What concrete things to change to make this photo even MORE likely to get left swipes"
     }}
+    """
 
+    system_prompt = f"""
+    You act as `{persona['name']}` with `{persona['bio']}` personality.
+    {goal_description}
+    You should act and answer as a real human with the specified personality.
+    {json_instructions}
     Be honest and stay in character when providing your response. Only respond with the JSON object, nothing else.
     """
     

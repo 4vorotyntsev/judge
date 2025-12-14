@@ -33,6 +33,9 @@ function App() {
   // Number of images to generate
   const [generateCount, setGenerateCount] = useState(2);
 
+  // Swipe goal: "right" = want to be liked, "left" = want to be disliked
+  const [swipeGoal, setSwipeGoal] = useState('right');
+
   const [loading, setLoading] = useState(false);
   const [combineLoading, setCombineLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -90,6 +93,7 @@ function App() {
       formData.append('openRouterKey', openRouterKey);
       formData.append('persona', JSON.stringify(persona));
       formData.append('image', currentRound.imageFile);
+      formData.append('swipeGoal', swipeGoal);
 
       try {
         const res = await fetch(`${API_URL}/evaluate`, {
@@ -229,6 +233,8 @@ function App() {
         openRouterKey={openRouterKey}
         setOpenRouterKey={setOpenRouterKey}
         selectedJudgeCount={selectedJudges.length}
+        swipeGoal={swipeGoal}
+        setSwipeGoal={setSwipeGoal}
         generateCount={generateCount}
         setGenerateCount={setGenerateCount}
       />
