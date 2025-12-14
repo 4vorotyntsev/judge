@@ -85,19 +85,24 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
         "response_format": {"type": "json_object"}
     }
     
-    # Log request (without full base64 image for readability)
-    logger.info(f"[EVALUATE] Persona: {persona['name']}")
-    logger.info(f"[EVALUATE] System prompt length: {len(system_prompt)} chars")
+    # Log request details (without image for readability)
+    logger.info(f"[EVALUATE] === Starting Evaluation ===")
+    logger.info(f"[EVALUATE] Persona: {persona['name']} (ID: {persona['id']})")
+    logger.info(f"[EVALUATE] Persona Bio: {persona['bio']}")
+    logger.info(f"[EVALUATE] Swipe Goal: {swipe_goal}")
     logger.info(f"[EVALUATE] Model: {data['model']}")
+    logger.info(f"[EVALUATE] System Prompt:\n{system_prompt}")
+    logger.info(f"[EVALUATE] User Message: [IMAGE - not logged]")
     
     async with httpx.AsyncClient() as client:
         response = await client.post(url, headers=headers, json=data, timeout=30.0)
         result = response.json()
     
-    # Log response without image data
-    logger.info(f"[EVALUATE] Response status: {response.status_code}")
+    # Log response (without image data)
+    logger.info(f"[EVALUATE] Response Status: {response.status_code}")
     
     content = result['choices'][0]['message']['content']
+    logger.info(f"[EVALUATE] Raw LLM Response:\n{content}")
     
     # Parse the JSON response
     try:
@@ -108,8 +113,17 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
         dislikes = parsed.get("dislikes", "")
         keep = parsed.get("keep", "")
         change = parsed.get("change", "")
+        
+        logger.info(f"[EVALUATE] Parsed Response:")
+        logger.info(f"[EVALUATE]   Swipe: {swipe}")
+        logger.info(f"[EVALUATE]   Reason: {reason}")
+        logger.info(f"[EVALUATE]   Likes: {likes}")
+        logger.info(f"[EVALUATE]   Dislikes: {dislikes}")
+        logger.info(f"[EVALUATE]   Keep: {keep}")
+        logger.info(f"[EVALUATE]   Change: {change}")
     except json.JSONDecodeError as e:
         logger.error(f"[EVALUATE] JSONDecodeError: {e}")
+        logger.error(f"[EVALUATE] Failed to parse content: {content}")
         swipe = "left"
         reason = ""
         likes = ""
@@ -145,6 +159,9 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
     }
 
 async def combine_feedback(feedbacks, api_key):
+    logger.info(f"[COMBINE] === Starting Feedback Combination ===")
+    logger.info(f"[COMBINE] Number of feedbacks: {len(feedbacks)}")
+    
     # Aggregator
     feedback_text = ''
     for persona in feedbacks:
@@ -192,11 +209,19 @@ async def combine_feedback(feedbacks, api_key):
         ]
     }
     
+    logger.info(f"[COMBINE] Model: {data['model']}")
+    logger.info(f"[COMBINE] System Prompt:\n{system_prompt}")
+    logger.info(f"[COMBINE] User Prompt:\n{prompt}")
+    
     async with httpx.AsyncClient() as client:
         response = await client.post(url, headers=headers, json=data, timeout=30.0)
         result = response.json()
-        
-    return {"summary": result['choices'][0]['message']['content']}
+    
+    summary = result['choices'][0]['message']['content']
+    logger.info(f"[COMBINE] Response Status: {response.status_code}")
+    logger.info(f"[COMBINE] Generated Summary:\n{summary}")
+    
+    return {"summary": summary}
 
 async def generate_new_images(suggestions, api_key, count=4, original_image=None):
     # Nana Banana Implementation
