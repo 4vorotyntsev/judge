@@ -102,12 +102,12 @@ const RoundCard = ({
                     />
                 )}
 
-                {/* New Pics Selection - only for current round */}
-                {isCurrentRound && (
+                {/* New Pics Selection - show for all rounds with generated images */}
+                {(newImages?.length > 0 || (isCurrentRound && generating)) && (
                     <NewPicsSelection
                         newImages={newImages}
-                        onSelect={onSelectNewImage}
-                        generating={generating}
+                        onSelect={isCurrentRound ? onSelectNewImage : null}
+                        generating={isCurrentRound ? generating : false}
                         generateCount={generateCount}
                     />
                 )}

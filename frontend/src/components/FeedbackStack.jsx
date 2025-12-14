@@ -81,7 +81,7 @@ const FeedbackStack = ({ feedbacks, personas }) => {
                                 {/* Likes */}
                                 {fb.likes && (
                                     <div className="flex items-start gap-2 bg-green-50 p-2 rounded-lg border border-green-100">
-                                        <span className="text-green-600 font-medium text-xs min-w-[60px]">❤️ Likes:</span>
+                                        <span className="text-green-600 font-medium text-xs min-w-[80px] shrink-0">❤️ Likes:</span>
                                         <p className="text-gray-700 text-xs">{fb.likes}</p>
                                     </div>
                                 )}
@@ -89,7 +89,7 @@ const FeedbackStack = ({ feedbacks, personas }) => {
                                 {/* Dislikes */}
                                 {fb.dislikes && (
                                     <div className="flex items-start gap-2 bg-red-50 p-2 rounded-lg border border-red-100">
-                                        <span className="text-red-600 font-medium text-xs min-w-[60px]">👎 Dislikes:</span>
+                                        <span className="text-red-600 font-medium text-xs min-w-[80px] shrink-0">👎 Dislikes:</span>
                                         <p className="text-gray-700 text-xs">{fb.dislikes}</p>
                                     </div>
                                 )}
@@ -97,7 +97,7 @@ const FeedbackStack = ({ feedbacks, personas }) => {
                                 {/* Keep */}
                                 {fb.keep && (
                                     <div className="flex items-start gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
-                                        <span className="text-blue-600 font-medium text-xs min-w-[60px]">✨ Keep:</span>
+                                        <span className="text-blue-600 font-medium text-xs min-w-[80px] shrink-0">✨ Keep:</span>
                                         <p className="text-gray-700 text-xs">{fb.keep}</p>
                                     </div>
                                 )}
@@ -105,7 +105,7 @@ const FeedbackStack = ({ feedbacks, personas }) => {
                                 {/* Change */}
                                 {fb.change && (
                                     <div className="flex items-start gap-2 bg-amber-50 p-2 rounded-lg border border-amber-100">
-                                        <span className="text-amber-600 font-medium text-xs min-w-[60px]">🔧 Change:</span>
+                                        <span className="text-amber-600 font-medium text-xs min-w-[80px] shrink-0">🔧 Change:</span>
                                         <p className="text-gray-700 text-xs">{fb.change}</p>
                                     </div>
                                 )}

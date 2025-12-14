@@ -62,8 +62,8 @@ const NewPicsSelection = ({ newImages, onSelect, generating, generateCount = 4 }
             <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
                     <span className="text-2xl">🎨</span>
-                    New Photo Options
-                    <span className="text-sm font-normal text-gray-400">Click to select</span>
+                    Generated Photos
+                    {onSelect && <span className="text-sm font-normal text-gray-400">Click to select</span>}
                 </h3>
                 {/* Download All Button */}
                 <button
@@ -81,8 +81,8 @@ const NewPicsSelection = ({ newImages, onSelect, generating, generateCount = 4 }
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: idx * 0.1 }}
-                        className="aspect-[3/4] bg-gray-50 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer border-2 border-gray-100 hover:border-purple-400 group relative"
-                        onClick={() => onSelect(img)}
+                        className={`aspect-[3/4] bg-gray-50 rounded-2xl overflow-hidden shadow-sm transition-all border-2 border-gray-100 group relative ${onSelect ? 'hover:shadow-xl cursor-pointer hover:border-purple-400' : ''}`}
+                        onClick={() => onSelect && onSelect(img)}
                     >
                         <img src={img} alt={`Choice ${idx + 1}`} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-purple-500/0 group-hover:bg-purple-500/10 transition-colors" />
@@ -96,11 +96,13 @@ const NewPicsSelection = ({ newImages, onSelect, generating, generateCount = 4 }
                             <Download className="h-5 w-5 text-purple-600" />
                         </button>
 
-                        <div className="absolute bottom-3 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="bg-white px-4 py-2 rounded-full font-bold shadow-lg text-purple-600 text-sm">
-                                Select This
-                            </span>
-                        </div>
+                        {onSelect && (
+                            <div className="absolute bottom-3 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="bg-white px-4 py-2 rounded-full font-bold shadow-lg text-purple-600 text-sm">
+                                    Select This
+                                </span>
+                            </div>
+                        )}
                     </motion.div>
                 ))}
             </div>

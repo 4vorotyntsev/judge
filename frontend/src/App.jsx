@@ -257,7 +257,7 @@ function App() {
             feedbacks={round.feedbacks}
             suggestions={round.suggestions}
             swipeStats={round.swipeStats}
-            newImages={[]}
+            newImages={round.newImages}
             personas={personas}
             isCurrentRound={false}
             loading={false}
