@@ -109,7 +109,7 @@ function App() {
           dislikes: data.dislikes || '',
           keep: data.keep || '',
           change: data.change || '',
-          isSwipeRight: data.swipe_right === true
+          isSwipeRight: data.swipe === "right"
         };
       } catch (err) {
         console.error(err);

@@ -17,29 +17,46 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
     They want to make their profile {"LESS attractive" if swipe_goal == "left" else "MORE attractive"} to most people.
     
     Your task is to:
-    - Look at this person's Tinder profile picture and decide if you would swipe {swipe_goal.upper()}.
-    - Provide detailed feedback on what makes this photo unappealing or off-putting.
-    - Suggest what to KEEP to maintain the "unattractive" vibe.
-    - Suggest what to CHANGE to make the photo even MORE likely to get left swipes.
+    - Look at this person's Tinder profile picture and decide if YOUR CHARACTER would swipe {swipe_goal.upper()}.
+    - Provide detailed feedback on your desigion.
+    - Suggest what to KEEP to make this photo less/more attractive.
+    - Suggest what to CHANGE to make this photo less/more attractive.
     """
 
-    json_instructions = """
-    You MUST respond with valid JSON in this exact format:
-    {{
-        "swipe_right": true or false,
-        "reason": "Brief explanation of why you would or wouldn't swipe",
-        "likes": "What you like about this photo that might make someone swipe (things to potentially remove)",
-        "dislikes": "What you dislike about this photo that helps achieve left swipes (things to keep or enhance)",
-        "keep": "What aspects make this photo unappealing and should stay the same",
-        "change": "What concrete things to change to make this photo even MORE likely to get left swipes"
-    }}
-    """
+    if swipe_goal == "right":
+        json_instructions = """
+        You MUST respond with valid JSON in this exact format:
+        {{
+            "swipe": "right" or "left",
+            "reason": "Brief explanation of why you would or wouldn't swipe right",
+            "likes": "What you like about this photo that makes it attractive (things to keep)",
+            "dislikes": "What you dislike about this photo (things to improve)",
+            "keep": "What aspects make this photo appealing and should stay the same",
+            "change": "What concrete things to change to make this photo MORE likely to get right swipes"
+        }}
+        """
+    else:  # swipe_goal == "left"
+        json_instructions = """
+        You MUST respond with valid JSON in this exact format:
+        {{
+            "swipe": "right" or "left",
+            "reason": "Brief explanation of why you would or wouldn't swipe",
+            "likes": "What you like about this photo that might make someone swipe (things to potentially remove)",
+            "dislikes": "What you dislike about this photo that helps achieve left swipes (things to keep or enhance)",
+            "keep": "What aspects make this photo unappealing and should stay the same",
+            "change": "What concrete things to change to make this photo even MORE likely to get left swipes"
+        }}
+        """
 
     system_prompt = f"""
     You act as `{persona['name']}` with `{persona['bio']}` personality.
+
     {goal_description}
+
     You should act and answer as a real human with the specified personality.
+
     {json_instructions}
+
     Be honest and stay in character when providing your response. Only respond with the JSON object, nothing else.
     """
     
@@ -84,7 +101,7 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
     # Parse the JSON response
     try:
         parsed = json.loads(content)
-        swipe_right = parsed.get("swipe_right", None)
+        swipe = parsed.get("swipe", None)
         reason = parsed.get("reason", "No reason provided")
         likes = parsed.get("likes", "")
         dislikes = parsed.get("dislikes", "")
@@ -92,7 +109,7 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
         change = parsed.get("change", "")
     except json.JSONDecodeError as e:
         logger.error(f"[EVALUATE] JSONDecodeError: {e}")
-        swipe_right = False
+        swipe = "left"
         reason = ""
         likes = ""
         dislikes = ""
@@ -117,7 +134,7 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key, swipe_goal=
     return {
         "personaId": persona['id'], 
         'name': persona['name'],
-        "swipe_right": swipe_right,
+        "swipe": swipe,
         "reason": reason,
         "likes": likes,
         "dislikes": dislikes,
