@@ -137,6 +137,7 @@ async def combine_feedback(feedbacks, api_key, goal):
     logger.info(f"[COMBINE] Number of feedbacks: {len(feedbacks)}")
     
     # Aggregator
+    np.random.shuffle(feedbacks)
     feedback_text = ''
     for persona in feedbacks:
         feedback_text += f"""
