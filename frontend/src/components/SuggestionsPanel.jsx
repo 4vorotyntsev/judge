@@ -1,8 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Lightbulb, ArrowRight } from 'lucide-react';
+import { Sparkles, Lightbulb, ArrowRight, Loader2, Image } from 'lucide-react';
 
-const SuggestionsPanel = ({ suggestions, combineLoading, onCombine, hasFeedbacks }) => {
+const SuggestionsPanel = ({
+    suggestions,
+    combineLoading,
+    onCombine,
+    hasFeedbacks,
+    onGenerate,
+    generating,
+    generateCount,
+    isCurrentRound
+}) => {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -21,20 +30,6 @@ const SuggestionsPanel = ({ suggestions, combineLoading, onCombine, hasFeedbacks
                         <p className="text-sm text-gray-500">AI-generated tips to improve your photo</p>
                     </div>
                 </div>
-
-                {/* Combine button (if has feedbacks but no suggestions yet) */}
-                {hasFeedbacks && !suggestions && !combineLoading && (
-                    <motion.button
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        onClick={onCombine}
-                        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-purple-200 hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center gap-2"
-                    >
-                        <Lightbulb className="w-4 h-4" />
-                        Get Suggestions
-                        <ArrowRight className="w-4 h-4" />
-                    </motion.button>
-                )}
             </div>
 
             {/* Content */}
@@ -49,32 +44,71 @@ const SuggestionsPanel = ({ suggestions, combineLoading, onCombine, hasFeedbacks
                     </div>
                 </div>
             ) : suggestions ? (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-5 border-2 border-purple-100"
-                >
-                    <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Lightbulb className="w-4 h-4 text-white" />
+                <div className="space-y-4">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-5 border-2 border-purple-100"
+                    >
+                        <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <Lightbulb className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                    {suggestions}
+                                </p>
+                            </div>
                         </div>
-                        <div className="flex-1">
-                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                {suggestions}
+                    </motion.div>
+
+                    {/* Generate Photos Button - only for current round */}
+                    {isCurrentRound && (
+                        <motion.button
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            onClick={onGenerate}
+                            disabled={generating}
+                            className="w-full flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-bold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-200 hover:shadow-xl hover:scale-[1.02] disabled:hover:scale-100"
+                        >
+                            {generating ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <Image className="h-5 w-5" />
+                            )}
+                            {generating ? 'Generating...' : `Generate ${generateCount} New Photo${generateCount > 1 ? 's' : ''}`}
+                            {!generating && <ArrowRight className="h-5 w-5" />}
+                        </motion.button>
+                    )}
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-center py-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-200">
+                        <div className="text-center">
+                            <div className="text-4xl mb-2">✨</div>
+                            <p className="text-sm text-gray-400">
+                                {hasFeedbacks
+                                    ? 'Click below to combine feedback into suggestions'
+                                    : 'Get feedback from judges first to see suggestions'}
                             </p>
                         </div>
                     </div>
-                </motion.div>
-            ) : (
-                <div className="flex items-center justify-center py-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-200">
-                    <div className="text-center">
-                        <div className="text-4xl mb-2">✨</div>
-                        <p className="text-sm text-gray-400">
-                            {hasFeedbacks
-                                ? 'Click "Get Suggestions" to see improvement tips'
-                                : 'Get feedback from judges first to see suggestions'}
-                        </p>
-                    </div>
+
+                    {/* Combine button (if has feedbacks but no suggestions yet) - only for current round */}
+                    {hasFeedbacks && isCurrentRound && (
+                        <motion.button
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={onCombine}
+                            disabled={combineLoading}
+                            className="w-full flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-purple-200 hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+                        >
+                            <Lightbulb className="w-5 h-5" />
+                            Combine & Get Suggestions
+                            <ArrowRight className="w-5 h-5" />
+                        </motion.button>
+                    )}
                 </div>
             )}
         </motion.div>

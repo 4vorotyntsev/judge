@@ -138,8 +138,12 @@ function App() {
         body: JSON.stringify({
           openRouterKey,
           feedbacks: currentRound.feedbacks.map(f => ({
-            personaName: personas.find(p => p.id === f.personaId)?.name || 'Unknown',
-            content: f.content
+            name: personas.find(p => p.id === f.personaId)?.name || 'Unknown',
+            content: f.content,
+            likes: f.likes || '',
+            dislikes: f.dislikes || '',
+            keep: f.keep || '',
+            change: f.change || ''
           }))
         })
       });
@@ -224,14 +228,6 @@ function App() {
       <Sidebar
         openRouterKey={openRouterKey}
         setOpenRouterKey={setOpenRouterKey}
-        onAskGirls={handleAskGirls}
-        onCombine={handleCombine}
-        onGenerate={handleGenerateClick}
-        loading={loading}
-        combineLoading={combineLoading}
-        generating={generating}
-        hasFeedbacks={currentRound.feedbacks.length > 0}
-        hasSuggestions={!!currentRound.suggestions}
         selectedJudgeCount={selectedJudges.length}
         generateCount={generateCount}
         setGenerateCount={setGenerateCount}
@@ -265,6 +261,10 @@ function App() {
             onImageUpload={() => { }}
             onCombine={() => { }}
             onSelectNewImage={() => { }}
+            onAskDates={() => { }}
+            onGenerate={() => { }}
+            hasApiKey={!!openRouterKey}
+            selectedJudgeCount={selectedJudges.length}
           />
         ))}
 
@@ -285,6 +285,10 @@ function App() {
           onImageUpload={handleImageUpload}
           onCombine={handleCombine}
           onSelectNewImage={handleSelectNewImage}
+          onAskDates={handleAskGirls}
+          onGenerate={handleGenerateClick}
+          hasApiKey={!!openRouterKey}
+          selectedJudgeCount={selectedJudges.length}
         />
 
         {/* Scroll anchor */}

@@ -1,8 +1,18 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ThumbsUp, ThumbsDown, Users } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Users, Heart } from 'lucide-react';
 
-const JudgesSummary = ({ feedbacks, personas, swipeStats }) => {
+const JudgesSummary = ({
+    feedbacks,
+    personas,
+    swipeStats,
+    onAskDates,
+    loading,
+    hasApiKey,
+    selectedJudgeCount,
+    isCurrentRound,
+    hasImage
+}) => {
     if (feedbacks.length === 0) {
         return (
             <div className="bg-white rounded-3xl p-6 border-2 border-gray-100 shadow-sm">
@@ -12,10 +22,29 @@ const JudgesSummary = ({ feedbacks, personas, swipeStats }) => {
                     </div>
                     <h2 className="text-lg font-bold text-gray-800">Judges Summary</h2>
                 </div>
+
+                {/* Ask Dates Button - only show for current round with image */}
+                {isCurrentRound && hasImage && (
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        onClick={onAskDates}
+                        disabled={loading || !hasApiKey || selectedJudgeCount === 0}
+                        className="w-full mb-4 flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl font-bold hover:from-pink-600 hover:to-rose-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-pink-200 hover:shadow-xl hover:scale-[1.02] disabled:hover:scale-100"
+                    >
+                        <Heart className={`h-5 w-5 ${loading ? 'animate-pulse' : ''}`} />
+                        {loading ? 'Asking...' : `Ask ${selectedJudgeCount} ${selectedJudgeCount === 1 ? 'Date' : 'Dates'}`}
+                    </motion.button>
+                )}
+
                 <div className="h-32 flex items-center justify-center text-gray-400 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-200">
                     <div className="text-center">
                         <div className="text-4xl mb-2">👀</div>
-                        <p className="text-sm">Waiting for the judges to evaluate...</p>
+                        <p className="text-sm">
+                            {isCurrentRound && hasImage
+                                ? 'Click the button above to ask the judges!'
+                                : 'Waiting for the judges to evaluate...'}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -46,10 +75,10 @@ const JudgesSummary = ({ feedbacks, personas, swipeStats }) => {
 
                 {/* Score indicator */}
                 <div className={`px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 ${yesPercentage >= 70
-                        ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-600'
-                        : yesPercentage >= 40
-                            ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-600'
-                            : 'bg-gradient-to-r from-red-100 to-pink-100 text-red-600'
+                    ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-600'
+                    : yesPercentage >= 40
+                        ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-600'
+                        : 'bg-gradient-to-r from-red-100 to-pink-100 text-red-600'
                     }`}>
                     {yesPercentage >= 70 ? '🔥' : yesPercentage >= 40 ? '😐' : '💔'}
                     {yesPercentage}% approval

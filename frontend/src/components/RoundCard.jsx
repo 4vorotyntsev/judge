@@ -21,7 +21,11 @@ const RoundCard = ({
     generateCount,
     onImageUpload,
     onCombine,
-    onSelectNewImage
+    onSelectNewImage,
+    onAskDates,
+    onGenerate,
+    hasApiKey,
+    selectedJudgeCount
 }) => {
     return (
         <motion.div
@@ -33,8 +37,8 @@ const RoundCard = ({
             {/* Round Header */}
             <div className="flex items-center gap-3 mb-4">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-lg ${isCurrentRound
-                        ? 'bg-gradient-to-br from-purple-500 to-pink-500'
-                        : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                    ? 'bg-gradient-to-br from-purple-500 to-pink-500'
+                    : 'bg-gradient-to-br from-gray-400 to-gray-500'
                     }`}>
                     {roundNumber}
                 </div>
@@ -69,6 +73,12 @@ const RoundCard = ({
                             feedbacks={feedbacks}
                             personas={personas}
                             swipeStats={swipeStats}
+                            onAskDates={onAskDates}
+                            loading={loading}
+                            hasApiKey={hasApiKey}
+                            selectedJudgeCount={selectedJudgeCount}
+                            isCurrentRound={isCurrentRound}
+                            hasImage={!!image}
                         />
                     </div>
                 </div>
@@ -85,6 +95,10 @@ const RoundCard = ({
                         combineLoading={isCurrentRound ? combineLoading : false}
                         onCombine={onCombine}
                         hasFeedbacks={feedbacks.length > 0}
+                        onGenerate={onGenerate}
+                        generating={generating}
+                        generateCount={generateCount}
+                        isCurrentRound={isCurrentRound}
                     />
                 )}
 

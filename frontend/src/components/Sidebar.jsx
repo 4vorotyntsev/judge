@@ -1,17 +1,9 @@
 import React from 'react';
-import { Key, Heart, MessageCircle, Image, Sparkles, Loader2 } from 'lucide-react';
+import { Key, Image } from 'lucide-react';
 
 const Sidebar = ({
     openRouterKey,
     setOpenRouterKey,
-    onAskGirls,
-    onCombine,
-    onGenerate,
-    loading,
-    combineLoading,
-    generating,
-    hasFeedbacks,
-    hasSuggestions,
     selectedJudgeCount,
     generateCount,
     setGenerateCount
@@ -64,42 +56,6 @@ const Sidebar = ({
                     </div>
                 </div>
             </div>
-
-            {/* Action Buttons */}
-            <button
-                onClick={onAskGirls}
-                disabled={loading || !openRouterKey || selectedJudgeCount === 0}
-                className="flex items-center justify-center gap-2 w-full p-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-            >
-                <Heart className={`h-5 w-5 ${loading ? 'animate-pulse' : ''}`} />
-                {loading ? 'Asking...' : `Ask ${selectedJudgeCount} ${selectedJudgeCount === 1 ? 'Date' : 'Dates'}`}
-            </button>
-
-            <button
-                onClick={onCombine}
-                disabled={combineLoading || !hasFeedbacks}
-                className="flex items-center justify-center gap-2 w-full p-3 bg-white border-2 border-gray-800 text-gray-800 rounded-xl font-bold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                <MessageCircle className="h-5 w-5" />
-                {combineLoading ? 'Combining...' : 'Combine Suggestions'}
-            </button>
-
-            {/* Generate Photos Button - appears after suggestions are ready */}
-            <button
-                onClick={onGenerate}
-                disabled={generating || !hasSuggestions}
-                className={`flex items-center justify-center gap-2 w-full p-3 rounded-xl font-bold transition-all duration-300 ${hasSuggestions
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-200 hover:shadow-xl hover:scale-[1.02]'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
-            >
-                {generating ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                    <Sparkles className="h-5 w-5" />
-                )}
-                {generating ? 'Generating...' : `Generate ${generateCount} Photo${generateCount > 1 ? 's' : ''}`}
-            </button>
 
             {/* Spacer */}
             <div className="flex-1" />
