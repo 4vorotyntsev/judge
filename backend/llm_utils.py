@@ -190,20 +190,10 @@ async def combine_feedback(feedbacks, api_key, goal):
     random.shuffle(feedbacks)
     feedback_text = ''
     for persona in feedbacks:
-        scores_str = persona.get('scores', {})
-        feedback_text += f"""
-        Character: {persona['name']}
-        Swipe: {persona.get('swipe', 'unknown')}
-        First Impression: {persona.get('first_impression', 'N/A')}
-        Reason: {persona.get('reason', 'N/A')}
-        Likes: {persona['likes']}
-        Dislikes: {persona['dislikes']}
-        Keep: {persona['keep']}
-        Change: {persona['change']}
-        Scores: {scores_str}
-        ---
-    """
-
+        persona_full_str = ""
+        for k, v in persona.items():
+            persona_full_str += f"{k}: {v}\n"
+        feedback_text += persona_full_str + "\n---\n"
     
     # Calculate consensus metrics
     right_swipes = sum(1 for f in feedbacks if f.get('swipe') == 'right')
@@ -318,7 +308,7 @@ async def combine_feedback(feedbacks, api_key, goal):
     async with httpx.AsyncClient() as client:
         response = await client.post(url, headers=headers, json=data, timeout=30.0)
         result = response.json()
-    
+
     content = result['choices'][0]['message']['content']
     logger.info(f"[COMBINE] Response Status: {response.status_code}")
     logger.info(f"[COMBINE] Raw Response:\n{content}")
