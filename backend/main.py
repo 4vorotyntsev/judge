@@ -22,16 +22,16 @@ app.add_middleware(
 )
 
 class EvaluationRequest(BaseModel):
-    openRouterKey: str
+    openRouterKey: Optional[str] = None
     personaId: int
 
 class CombineRequest(BaseModel):
-    openRouterKey: str
+    openRouterKey: Optional[str] = None
     goal: str = "right"  # "right" = want to be liked, "left" = want to be disliked
     feedbacks: List[dict]
 
 class GenerateRequest(BaseModel):
-    openRouterKey: str
+    openRouterKey: Optional[str] = None
     suggestions: str
 
 @app.get("/")
@@ -40,7 +40,7 @@ def read_root():
 
 @app.post("/api/evaluate")
 async def evaluate_endpoint(
-    openRouterKey: str = Form(...),
+    openRouterKey: Optional[str] = Form(None),
     persona: str = Form(...), # JSON string of persona
     image: UploadFile = File(...),
 ):
@@ -64,7 +64,7 @@ async def combine_endpoint(request: CombineRequest):
 
 @app.post("/api/generate")
 async def generate_endpoint(
-    openRouterKey: str = Form(...),
+    openRouterKey: Optional[str] = Form(None),
     suggestions: str = Form(...),
     count: int = Form(4),
     originalImage: UploadFile = File(None)
