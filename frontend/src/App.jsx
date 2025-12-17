@@ -100,11 +100,19 @@ function App() {
           method: 'POST',
           body: formData
         });
+
+        // Check for HTTP errors
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          console.error(`API error ${res.status}:`, errorData.detail || 'Unknown error');
+          return null;
+        }
+
         const data = await res.json();
         return {
           personaId: persona.id,
-          content: data.content || data.reason,
-          reason: data.reason,
+          content: data.content || data.reason || '',
+          reason: data.reason || '',
           likes: data.likes || '',
           dislikes: data.dislikes || '',
           keep: data.keep || '',
@@ -152,6 +160,14 @@ function App() {
           }))
         })
       });
+
+      // Check for HTTP errors
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error(`Combine API error ${res.status}:`, errorData.detail || 'Unknown error');
+        return;
+      }
+
       const data = await res.json();
       setCurrentRound(prev => ({
         ...prev,
@@ -190,6 +206,14 @@ function App() {
         method: 'POST',
         body: formData
       });
+
+      // Check for HTTP errors
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error(`Generate API error ${res.status}:`, errorData.detail || 'Unknown error');
+        return;
+      }
+
       const data = await res.json();
       setCurrentRound(prev => ({
         ...prev,

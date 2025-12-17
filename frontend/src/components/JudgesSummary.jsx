@@ -53,7 +53,9 @@ const JudgesSummary = ({
 
     const yesVotes = feedbacks.filter(fb => fb.isSwipeRight);
     const noVotes = feedbacks.filter(fb => !fb.isSwipeRight);
-    const yesPercentage = Math.round((swipeStats.yes / swipeStats.total) * 100);
+    const yesPercentage = swipeStats.total > 0
+        ? Math.round((swipeStats.yes / swipeStats.total) * 100)
+        : 0;
 
     return (
         <motion.div
