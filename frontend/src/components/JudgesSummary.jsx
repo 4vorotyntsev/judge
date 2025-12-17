@@ -29,7 +29,7 @@ const JudgesSummary = ({
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         onClick={onAskDates}
-                        disabled={loading || !hasApiKey || selectedJudgeCount === 0}
+                        disabled={loading || selectedJudgeCount === 0}
                         className="w-full mb-4 flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl font-bold hover:from-pink-600 hover:to-rose-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-pink-200 hover:shadow-xl hover:scale-[1.02] disabled:hover:scale-100"
                     >
                         <Heart className={`h-5 w-5 ${loading ? 'animate-pulse' : ''}`} />

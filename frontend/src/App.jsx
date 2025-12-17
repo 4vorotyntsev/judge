@@ -77,7 +77,7 @@ function App() {
   };
 
   const handleAskGirls = async () => {
-    if (!currentRound.imageFile || !openRouterKey || selectedJudges.length === 0) return;
+    if (!currentRound.imageFile || selectedJudges.length === 0) return;
 
     setLoading(true);
     setCurrentRound(prev => ({
