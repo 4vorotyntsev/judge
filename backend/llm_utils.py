@@ -5,6 +5,9 @@ import base64
 import httpx
 import logging
 import random
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -15,7 +18,7 @@ def _resolve_api_key(api_key):
     """
     Resolve API key: use provided key if not None, otherwise fall back to env var.
     """
-    if api_key is not None:
+    if type(api_key) == str and len(api_key) > 0:
         return api_key
     
     env_key = os.environ.get("OPENROUTER_API_KEY")
@@ -305,12 +308,33 @@ async def combine_feedback(feedbacks, api_key, goal):
     logger.info(f"[COMBINE] System Prompt:\n{system_prompt}")
     logger.info(f"[COMBINE] User Prompt:\n{prompt}")
     
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, headers=headers, json=data, timeout=30.0)
-        result = response.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            logger.info(f"[COMBINE] Sending request to OpenRouter API...")
+            response = await client.post(url, headers=headers, json=data, timeout=60.0)
+            result = response.json()
+    except httpx.TimeoutException as e:
+        logger.error(f"[COMBINE] Request timed out: {e}")
+        raise Exception(f"OpenRouter API request timed out: {e}")
+    except httpx.RequestError as e:
+        logger.error(f"[COMBINE] Request error: {e}")
+        raise Exception(f"OpenRouter API request failed: {e}")
+    except Exception as e:
+        logger.error(f"[COMBINE] Unexpected error during API call: {e}")
+        raise
 
-    content = result['choices'][0]['message']['content']
     logger.info(f"[COMBINE] Response Status: {response.status_code}")
+    
+    # Check for API errors
+    if 'error' in result:
+        logger.error(f"[COMBINE] API Error: {result['error']}")
+        raise Exception(f"OpenRouter API error: {result['error']}")
+    
+    if 'choices' not in result or not result['choices']:
+        logger.error(f"[COMBINE] Unexpected response format: {result}")
+        raise Exception(f"Unexpected API response format: {result}")
+    
+    content = result['choices'][0]['message']['content']
     logger.info(f"[COMBINE] Raw Response:\n{content}")
     
     # Parse the JSON response
