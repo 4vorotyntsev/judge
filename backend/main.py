@@ -2,8 +2,13 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+from dotenv import load_dotenv
 import json
 import os
+
+# Load environment variables from .env file
+load_dotenv()
+
 from llm_utils import evaluate_image_with_persona, generate_new_images, combine_feedback
 
 app = FastAPI()
