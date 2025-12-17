@@ -4,6 +4,7 @@ import json
 import base64
 import httpx
 import logging
+import random
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,25 +32,45 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key):
     base64_image = base64.b64encode(image_bytes).decode('utf-8')
 
     system_prompt = f"""
-    You act as `{persona['name']}` with `{persona['bio']}` personality.
-    You should act and answer as a real human with the specified personality.
+    You are `{persona['name']}` with this personality: `{persona['bio']}`.
+    You must think and respond as this specific person would - with their unique preferences, dealbreakers, and taste.
 
-    Your task is to:
-    - Look at this person's Tinder profile picture and HONESTLY decide if YOUR CHARACTER would swipe RIGHT or LEFT.
-    - Provide detailed feedback on your decision.
-    - Suggest what to KEEP to increase the likliness of the photo and get more right swipes.
-    - Suggest what to CHANGE to increase the likliness of the photo and get more right swipes.
+    ## EVALUATION CRITERIA
+    Analyze these specific aspects of the Tinder profile picture:
 
-    Be honest and stay in character when providing your response. Only respond with the JSON object, nothing else.
+    1. **First Impression** (0-3 seconds): What emotion does this photo trigger immediately?
+    2. **Face & Expression**: Is the face clearly visible? Genuine smile vs forced? Eye contact?
+    3. **Body Language**: Confident? Approachable? Awkward? Open or closed posture?
+    4. **Setting/Background**: Interesting? Distracting? Does it tell a story about lifestyle?
+    5. **Photo Quality**: Lighting quality, resolution, angles, selfie vs someone else took it
+    6. **Outfit & Grooming**: Effort level, style match, cleanliness, appropriateness
+    7. **Authenticity**: Does it feel staged/try-hard or natural/effortless?
+    8. **Red Flags**: Group photos, bathroom selfies, exes cropped out, sunglasses hiding face, etc.
 
-    Output format:
+    ## YOUR TASK
+    Based on YOUR CHARACTER's specific preferences and personality, decide: Would YOU swipe RIGHT or LEFT?
+
+    Remember:
+    - What would SPECIFICALLY attract YOUR character type?
+    - What are YOUR dealbreakers based on your personality?
+    - Don't give generic advice - filter everything through YOUR unique perspective.
+
+    ## OUTPUT FORMAT
+    Respond with ONLY this JSON object:
     {{
         "swipe": "left" or "right",
-        "reason": "Reason for the swipe",
-        "likes": "What you like about the photo",
-        "dislikes": "What you dislike about the photo",
-        "keep": "What to keep to make picture more right swipeable",
-        "change": "What to change to make picture more right swipeable"
+        "first_impression": "One sentence - your gut reaction in the first 3 seconds",
+        "reason": "2-3 sentences explaining WHY you swiped this way, from your character's perspective",
+        "likes": "Be SPECIFIC - not 'nice smile' but 'the genuine laugh lines around the eyes show authenticity'",
+        "dislikes": "Be SPECIFIC - not 'bad lighting' but 'harsh overhead lighting creates unflattering shadows under the eyes'",
+        "keep": "The ONE element that works best and should absolutely stay",
+        "change": "The ONE change that would have the biggest positive impact on your decision",
+        "scores": {{
+            "attractiveness": 1-10,
+            "authenticity": 1-10,
+            "photo_quality": 1-10,
+            "overall_swipeability": 1-10
+        }}
     }}
     """
     logger.info(f"[EVALUATE] System Prompt:\n{system_prompt}")
@@ -100,31 +121,39 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key):
     try:
         parsed = json.loads(content)
         swipe = parsed.get("swipe", None)
+        first_impression = parsed.get("first_impression", "")
         reason = parsed.get("reason", "No reason provided")
         likes = parsed.get("likes", "")
         dislikes = parsed.get("dislikes", "")
         keep = parsed.get("keep", "")
         change = parsed.get("change", "")
+        scores = parsed.get("scores", {})
         
         logger.info(f"[EVALUATE] Parsed Response:")
         logger.info(f"[EVALUATE]   Swipe: {swipe}")
+        logger.info(f"[EVALUATE]   First Impression: {first_impression}")
         logger.info(f"[EVALUATE]   Reason: {reason}")
         logger.info(f"[EVALUATE]   Likes: {likes}")
         logger.info(f"[EVALUATE]   Dislikes: {dislikes}")
         logger.info(f"[EVALUATE]   Keep: {keep}")
         logger.info(f"[EVALUATE]   Change: {change}")
+        logger.info(f"[EVALUATE]   Scores: {scores}")
     except json.JSONDecodeError as e:
         logger.error(f"[EVALUATE] JSONDecodeError: {e}")
         logger.error(f"[EVALUATE] Failed to parse content: {content}")
         swipe = "left"
+        first_impression = ""
         reason = ""
         likes = ""
         dislikes = ""
         keep = ""
         change = ""
+        scores = {}
     
     # Build content summary
     content_parts = []
+    if first_impression:
+        content_parts.append(f"First Impression: {first_impression}")
     if reason:
         content_parts.append(f"Reason: {reason}")
     if likes:
@@ -142,11 +171,13 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key):
         "personaId": persona['id'], 
         'name': persona['name'],
         "swipe": swipe,
+        "first_impression": first_impression,
         "reason": reason,
         "likes": likes,
         "dislikes": dislikes,
         "keep": keep,
         "change": change,
+        "scores": scores,
         "content": full_content,
     }
 
@@ -155,48 +186,103 @@ async def combine_feedback(feedbacks, api_key, goal):
     logger.info(f"[COMBINE] === Starting Feedback Combination ===")
     logger.info(f"[COMBINE] Number of feedbacks: {len(feedbacks)}")
     
-    # Aggregator
-    np.random.shuffle(feedbacks)
+    # Aggregator - shuffle to prevent order bias
+    random.shuffle(feedbacks)
     feedback_text = ''
     for persona in feedbacks:
+        scores_str = persona.get('scores', {})
         feedback_text += f"""
         Character: {persona['name']}
-        Feedback: {persona['content']}
-        Like: {persona['likes']}
-        Dislike: {persona['dislikes']}
+        Swipe: {persona.get('swipe', 'unknown')}
+        First Impression: {persona.get('first_impression', 'N/A')}
+        Reason: {persona.get('reason', 'N/A')}
+        Likes: {persona['likes']}
+        Dislikes: {persona['dislikes']}
         Keep: {persona['keep']}
         Change: {persona['change']}
+        Scores: {scores_str}
         ---
     """
 
     
+    # Calculate consensus metrics
+    right_swipes = sum(1 for f in feedbacks if f.get('swipe') == 'right')
+    left_swipes = sum(1 for f in feedbacks if f.get('swipe') == 'left')
+    total = len(feedbacks)
+    
+    goal_strategy = """
+    ## STRATEGY FOR MORE RIGHT SWIPES:
+    - Maximize approachability and attractiveness
+    - Emphasize positive traits that multiple personas mentioned
+    - Fix the TOP 2 issues that got negative reactions
+    - Keep authentic elements that resonated
+    - Double down on unique strengths
+    """ if goal == 'right' else """
+    ## STRATEGY FOR MORE LEFT SWIPES:
+    - Identify what made the photo appealing and reduce it
+    - Emphasize elements that got negative reactions
+    - Make the photo less polished/effortful
+    - Add subtle elements that turn people off
+    """
+
     system_prompt = f"""
-    You act as an image generation expert and dating coach. 
-    Based on the feedback about the photo, you need to provide TWO things:
+    You are an expert image generation specialist AND dating coach with deep knowledge of what makes Tinder photos successful.
 
-    1. THINKING: Analyze the feedback and think about:
-       - What elements should definitely be KEPT because they're working well
-       - What elements need to be CHANGED or improved
-       - What to DOUBLE DOWN on (strengths to emphasize more)
-       - What to AVOID or remove entirely
-       - Overall strategy for improvement
-       - When deciding on changes, start with "To get more {goal} swipes,"
+    ## FEEDBACK SUMMARY
+    - Total evaluators: {total}
+    - Right swipes: {right_swipes} ({right_swipes*100//total if total > 0 else 0}%)
+    - Left swipes: {left_swipes} ({left_swipes*100//total if total > 0 else 0}%)
 
-    2. PROMPT: A specific image generation prompt that would enhance the photo based on your analysis.
+    ## ANALYSIS FRAMEWORK
+    Analyze the feedback using this structured approach:
 
-    Note: all feedbacks are provided by Tinder users, they answered questions about photo to increase the change of RIGHT SWIPES.
-
-    The goal of the owner of the photo to get more {goal} SWIPES. {'Apply suggestions to get more RIGHT SWIPES' if goal == 'right' else 'Do the opposite of suggestions to get more LEFT SWIPES'}.
+    1. **CONSENSUS ITEMS** (High Confidence): What do MOST personas agree on?
+    - These are your primary action items
     
-    The prompt should be:
-    - Detailed and specific about pose, lighting, background, expression, and styling
-    - Actionable for an AI image generator
-    - Focus on the most impactful improvements mentioned in the feedback
+    2. **CONFLICTING OPINIONS**: Where do personas disagree?
+    - Identify the majority view
+    - Consider which view aligns better with the target goal
     
-    Respond with ONLY a JSON object in this exact format:
+    3. **OUTLIER INSIGHTS**: Any unique observations worth considering?
+    - Sometimes one persona catches something others missed
+
+    ## PRIORITY RANKING
+    - **P1 (Critical)**: Issues/strengths mentioned by 3+ personas
+    - **P2 (Important)**: Issues/strengths mentioned by 2 personas
+    - **P3 (Nice-to-have)**: Unique suggestions worth considering
+
+    ## GOAL: Get more {goal.upper()} SWIPES
+    {goal_strategy}
+
+    ## YOUR TASK
+    Provide TWO things:
+
+    ### 1. THINKING
+    Your structured analysis including:
+    - What to KEEP (working well)
+    - What to CHANGE (needs improvement)  
+    - What to DOUBLE DOWN on (amplify strengths)
+    - What to AVOID (remove entirely)
+    - Overall strategy for achieving the goal
+
+    ### 2. PROMPT
+    A detailed image generation prompt that MUST include:
+    - **Subject**: Exact pose, expression, body language to achieve
+    - **Camera**: Angle (eye-level, slightly above), distance (medium shot, close-up)
+    - **Lighting**: Type (golden hour, soft natural, studio), direction
+    - **Background**: Specific setting that enhances the story
+    - **Mood/Vibe**: The emotional tone to convey
+    - **Style**: Photography style (candid, portrait, lifestyle)
+
+    Example format: "Professional lifestyle portrait, genuine laughing expression, looking slightly off-camera, golden hour natural lighting from the left, outdoor café setting with soft bokeh background, warm and approachable mood, shot at eye level, medium-close framing"
+
+    ## OUTPUT FORMAT
+    Respond with ONLY this JSON:
     {{
-        "thinking": "Your detailed analysis of what to keep, change, double down on, avoid, and the overall strategy",
-        "prompt": "The specific image generation prompt"
+        "thinking": "Your detailed structured analysis",
+        "prompt": "The complete, specific image generation prompt",
+        "priority_changes": ["P1 change 1", "P1 change 2"],
+        "consensus_keeps": ["Element to keep 1", "Element to keep 2"]
     }}
     """
     logger.info(f"[COMBINE] System Prompt:\n{system_prompt}")
@@ -255,9 +341,7 @@ async def combine_feedback(feedbacks, api_key, goal):
 
 async def generate_new_images(suggestions, api_key, count=4, original_image=None):
     api_key = _resolve_api_key(api_key)
-    # Nana Banana Implementation
-    # Using google/gemini-3-pro-image-preview
-    
+
     logger.info(f"[GENERATE] Suggestions: {suggestions}")
     logger.info(f"[GENERATE] Count: {count}")
     logger.info(f"[GENERATE] Has original image: {original_image is not None}")
@@ -271,12 +355,33 @@ async def generate_new_images(suggestions, api_key, count=4, original_image=None
     
     images = []
     
-    # Build message content
+    # Build message content with identity preservation constraints
     system_prompt = f"""
-    Generate an enhanced version of a Tinder profile picture based on this advice
+    You are enhancing a Tinder profile picture. Your goal is to create an improved version that follows the advice below.
+
+    ## CRITICAL CONSTRAINTS
+    - **PRESERVE**: Same person, recognizable facial features, authentic feel, personality
+    - **TRANSFORM**: Only the specific elements mentioned in the advice
+    - **AVOID**: Making the person look like someone else, over-filtering, uncanny valley effects, unrealistic enhancements
+
+    ## QUALITY REQUIREMENTS
+    - Resolution: High-quality, sharp, not pixelated
+    - Lighting: Natural and flattering
+    - Focus: Sharp on face, appropriate depth of field
+    - Realism: Must look like a real photo taken by a real camera
+    - Platform-ready: Appropriate for Tinder (tasteful, genuine, approachable)
+
+    ## ADVICE TO IMPLEMENT
     ```
     {suggestions}
     ```
+
+    ## IMPORTANT
+    Generate a photo that:
+    1. Looks like it could have been taken on the same day as the original
+    2. The person is clearly the SAME person, just photographed better
+    3. Improvements feel natural, not artificial or AI-generated
+    4. Would genuinely perform better on Tinder based on the advice given
     """
     
     # Include original image for reference
