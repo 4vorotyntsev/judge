@@ -1,3 +1,4 @@
+import os
 import requests
 import json
 import base64
@@ -8,7 +9,24 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+
+def _resolve_api_key(api_key):
+    """
+    Resolve API key: use provided key if not None, otherwise fall back to env var.
+    """
+    if api_key is not None:
+        return api_key
+    
+    env_key = os.environ.get("OPENROUTER_API_KEY")
+    if env_key:
+        logger.info("[API_KEY] Using default API key from OPENROUTER_API_KEY environment variable")
+        return env_key
+    
+    raise ValueError("No API key provided and OPENROUTER_API_KEY environment variable is not set")
+
+
 async def evaluate_image_with_persona(image_bytes, persona, api_key):
+    api_key = _resolve_api_key(api_key)
     # Encode image
     base64_image = base64.b64encode(image_bytes).decode('utf-8')
 
@@ -133,6 +151,7 @@ async def evaluate_image_with_persona(image_bytes, persona, api_key):
     }
 
 async def combine_feedback(feedbacks, api_key, goal):
+    api_key = _resolve_api_key(api_key)
     logger.info(f"[COMBINE] === Starting Feedback Combination ===")
     logger.info(f"[COMBINE] Number of feedbacks: {len(feedbacks)}")
     
@@ -235,6 +254,7 @@ async def combine_feedback(feedbacks, api_key, goal):
     return {"thinking": thinking, "prompt": prompt_text}
 
 async def generate_new_images(suggestions, api_key, count=4, original_image=None):
+    api_key = _resolve_api_key(api_key)
     # Nana Banana Implementation
     # Using google/gemini-3-pro-image-preview
     
