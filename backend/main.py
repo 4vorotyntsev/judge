@@ -70,6 +70,10 @@ async def generate_endpoint(
     originalImage: UploadFile = File(None)
 ):
     try:
+        # Limit photo generation to 2 max when using default API key
+        if openRouterKey is None:
+            count = min(count, 2)
+        
         # Read original image if provided
         original_image_bytes = None
         if originalImage:
