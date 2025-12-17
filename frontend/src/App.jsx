@@ -67,6 +67,7 @@ function App() {
       id: `custom-${Date.now()}`,
       name: customJudge.name,
       bio: customJudge.bio,
+      gender: customJudge.gender,
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(customJudge.name)}`,
       isCustom: true
     };
